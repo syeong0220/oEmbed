@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -145,29 +146,33 @@ public class OembedServiceImpl implements OembedService {
 
     public JSONObject returnUrl(String createUrl) throws ClientProtocolException, IOException, ParseException {
         JSONObject resultObj = null;
-        HttpGet httpGet = null;
-        CloseableHttpClient httpClient = null;
-        CloseableHttpResponse httpResponse = null;
         try {
-            httpClient = HttpClients.createDefault();
-            // get 메서드와 URL 설정
-            httpGet = new HttpGet(createUrl);
-            httpGet.addHeader("Content-Type", "application/json");
+            URL url = new URL(createUrl);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
-            // get 요청
-            httpResponse = httpClient.execute(httpGet);
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setDoOutput(true);
+            conn.connect();
 
-            String responseStr = EntityUtils.toString(httpResponse.getEntity(), "UTF-8");
+            BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+
+            StringBuilder sb = new StringBuilder();
+            String line = "";
+            while ((line = br.readLine()) != null) {
+                sb.append(line);
+            }
 
             JSONParser parser = new JSONParser();
-            Object obj = parser.parse(responseStr);
-            resultObj = (JSONObject) obj;
-        } catch (Exception e) {
-            log.error("oembed JSON 데이터 생성 실패 : {} ", httpResponse);
+            resultObj = (JSONObject) parser.parse(sb.toString());
+
+            conn.disconnect();
+        } catch (IOException | ParseException e) {
+            log.error("oembed JSON 데이터 생성 실패 : {} ", e);
             throw new LogicException(MessageException.FAILED_CREATE_JSON_DATA);
         }
         if (resultObj == null) {
-            log.error("oembed JSON 데이터 생성 실패 : {} ", httpResponse);
+            log.error("oembed JSON 데이터 생성 실패");
             throw new LogicException(MessageException.FAILED_CREATE_JSON_DATA);
         }
         return resultObj;
