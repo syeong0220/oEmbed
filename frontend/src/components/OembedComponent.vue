@@ -3,12 +3,12 @@
     <div class="div-search">
       <h2>oEmbed Test</h2> 
       <div class="div-input">
-        <input type="text" v-model="form.url" placeholder="Enter oEmbed Url"/>
-        <button @click="load">확인</button>
+        <input type="text" v-model="form.url" placeholder="Enter oEmbed Url" v-on:keyup.enter="submit"/>
+        <button @click="submit">확인</button>
       </div>
     </div>
-    <div>
-      <table class="table b-table table-striped" style="border: 15px solid #dbdbdb;">
+    <div class="div-table" style="">
+      <table class="table b-table table-striped">
         <tbody class="rowclass">
           <!-- eslint-disable vue/no-use-v-if-with-v-for,vue/no-confusing-v-for-v-if -->
           <tr v-for="(value, text) in data" v-if="value !== undefined && value !== null" :key="text">
@@ -44,8 +44,9 @@ export default {
     }
   },
   methods: {
-    load() {
+    submit() {
       if (this.form.url !== '') {
+        if(this.form.url.includes('instagram') === false){
           axios.get('/api/oembed/list?url=' + this.form.url, {
           }).then(res => {
             // this.$set(this, 'data', res.data)
@@ -72,9 +73,13 @@ export default {
             this.$set(this.data, 'cache_age', res.data.cache_age)
           }).catch((e) => {
             alert(e.response.data.message)
-          }).finally(() => {
-
+            this.$set(this, 'data', {})
+            this.$set(this.form, 'url', '')
           })
+        } else {
+          alert('instagram은 oEmbed 서비스 준비 중에 있습니다.')
+          return false
+        }
       } else {
         alert('url을 입력해 주세요')
         return false
@@ -103,7 +108,7 @@ export default {
 .div-search{
   text-align:center;
   margin-top:40px;
-  background-color: #3ac0c0;
+  background-color: #46aaaa;
 }
 h2{
   color:white;
@@ -126,11 +131,17 @@ h2{
     top: 136px;
     right: 436px;
     border: none;
-    background: #eeee14bd;
+    background: #eed243;
     font-weight: bold;
     width: 60px;
     height: 35px;
     font-size: 13px;
+}
+.div-table{
+  border: 15px solid #e2e3e5;
+}
+table{
+ border: 15px solid #fff;
 }
 td{
   border-bottom:none;
