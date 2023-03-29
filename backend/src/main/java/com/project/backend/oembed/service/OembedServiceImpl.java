@@ -1,10 +1,9 @@
-package com.project.backend.oembed;
+package com.project.backend.oembed.service;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -25,12 +24,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import com.project.backend.oembed.exception.MessageException;
+import com.project.backend.oembed.controller.OembedController;
+import com.project.backend.oembed.exception.LogicException;
+
 @Service("OembedService")
 public class OembedServiceImpl implements OembedService {
     private static final Logger log = LoggerFactory.getLogger(OembedController.class);
 
     @Override
-    public JSONObject getOembedList(String url) throws Exception {
+    public JSONObject getOembedInfo(String url) throws Exception {
         // 1. URL 유효성 검증되면 실행
         if (isValidUrl(url)) {
             // 2. https://oembed.com/providers.json 데이터 가져오기
@@ -50,22 +53,21 @@ public class OembedServiceImpl implements OembedService {
 
     public boolean isValidUrl(String url) throws Exception {
         UrlValidator urlValidator = new UrlValidator();
-
         if (!urlValidator.isValid(url)) {
-            log.error("Not Valid URL : {}", url);
-            throw new Exception("유효하지 않은 URL 입니다.");
+            log.error("URL NOT VALID : {}", url);
+            throw new LogicException(MessageException.URL_NOT_VALID);
         }
-        log.info("Valid URL : {}", url);
         return urlValidator.isValid(url);
     }
 
     public String getHost(String originUrl) throws Exception {
-        String host = null;
         URL url = new URL(originUrl);
+        String host = null;
         host = url.getHost();
 
         if (host == null) {
-            throw new Exception("주소가 확실하지 않습니다.");
+            log.error("HOST NOT VALID : {}", url);
+            throw new LogicException(MessageException.HOST_NOT_VALID);
         }
         return host;
     }
@@ -101,7 +103,7 @@ public class OembedServiceImpl implements OembedService {
                 // 2. endpoints 정보 추출
                 JSONArray endPoints = (JSONArray) providersInfo.get("endpoints");
 
-                // 3. 서비스별 첫번째 endPoints의 url 가져오기
+                // 3. 서비스별 endPoints의 url 가져오기
                 JSONObject urlData = (JSONObject) endPoints.get(0);
                 String urlList = (String) urlData.get("url");
 
@@ -121,43 +123,54 @@ public class OembedServiceImpl implements OembedService {
         // 1. host 정보 가져오기
         String host = this.getHost(originUrl);
 
+        log.info("host : {}", host);
+
         // 2. list에서 host이름을 포함한 oEmbed url 찾기
-        for (String str : list) {
-            if (str.contains(host)) {
-                if (str.contains("oembed.")) {
+        for (String urlName : list) {
+            if (urlName.contains(host)) {
+                if (urlName.contains("oembed.")) {
                     // host이름에 oembed.이 포함돼있는지 확인
-                    if (str.contains("{format}")) { // host이름에 oembed.이 포함돼있으면 {format}이 있는지 확인
-                        str = str.replace("{format}", "json"); // {format} => json으로 변경
+                    if (urlName.contains("{format}")) { // host이름에 oembed.이 포함돼있으면 {format}이 있는지 확인
+                        urlName = urlName.replace("{format}", "json"); // {format} => json으로 변경
                     }
-                    oEmbedUrl = str.concat(concatUrl);
-                } else if (str.contains("_oembed")) { // host이름에 _oembed가 포함돼있는지 확인
-                    // 인스타그램 처리
+                    oEmbedUrl = urlName.concat(concatUrl);
                 } else {
-                    oEmbedUrl = str.concat(concatUrl) + "&format=json";
+                    oEmbedUrl = urlName.concat(concatUrl) + "&format=json";
                 }
                 break;
             }
         }
+        log.info("oEmbedUrl: {}", oEmbedUrl);
         return oEmbedUrl;
     }
 
     public JSONObject returnUrl(String createUrl) throws ClientProtocolException, IOException, ParseException {
-        CloseableHttpClient httpClient = HttpClients.createDefault();
+        JSONObject resultObj = null;
+        HttpGet httpGet = null;
+        CloseableHttpClient httpClient = null;
+        CloseableHttpResponse httpResponse = null;
+        try {
+            httpClient = HttpClients.createDefault();
+            // get 메서드와 URL 설정
+            httpGet = new HttpGet(createUrl);
+            httpGet.addHeader("Content-Type", "application/json");
 
-        // get 메서드와 URL 설정
-        HttpGet httpGet = new HttpGet(createUrl);
-        httpGet.addHeader("Content-Type", "application/json");
+            // get 요청
+            httpResponse = httpClient.execute(httpGet);
 
-        // get 요청
-        CloseableHttpResponse httpResponse = httpClient.execute(httpGet);
+            String responseStr = EntityUtils.toString(httpResponse.getEntity(), "UTF-8");
 
-        String responseStr = EntityUtils.toString(httpResponse.getEntity(), "UTF-8");
-
-        JSONParser parser = new JSONParser();
-        Object obj = parser.parse(responseStr);
-
-        JSONObject resultObj = (JSONObject) obj;
-
+            JSONParser parser = new JSONParser();
+            Object obj = parser.parse(responseStr);
+            resultObj = (JSONObject) obj;
+        } catch (Exception e) {
+            log.error("oembed JSON 데이터 생성 실패 : {} ", httpResponse);
+            throw new LogicException(MessageException.FAILED_CREATE_JSON_DATA);
+        }
+        if (resultObj == null) {
+            log.error("oembed JSON 데이터 생성 실패 : {} ", httpResponse);
+            throw new LogicException(MessageException.FAILED_CREATE_JSON_DATA);
+        }
         return resultObj;
     }
 
