@@ -8,25 +8,25 @@
       </div>
     </div>
     <div>
-    <table class="table b-table table-striped" style="border: 15px solid #dbdbdb;">
-      <tbody class="rowclass">
-        <!-- eslint-disable vue/no-use-v-if-with-v-for,vue/no-confusing-v-for-v-if -->
-        <tr v-for="(value, text) in data" v-if="value !== undefined && value !== null" :key="text">
-          <td v-if="text === 'html' || text === 'thumbnail_url'">{{ text }}<br><div>{{ isSize(text) }}</div></td>
-          <td v-else>{{ text }}</td>
-          <td v-if="text === 'title'" style="font-weight: bold;">{{ value }}</td>
-          <td v-else-if="text === 'html'">{{value}}<div v-html="value"></div></td>
-          <td v-else-if="text === 'thumbnail_url'">
-            <a :href="value">{{ value }}</a>
-            <br><img :src="value" />
-          </td>
-          <td v-else-if="isUrl(text)">
-            <a :href="value">{{ value }}</a>
-          </td>
-          <td v-else>{{ value }}</td>
-        </tr>
-      </tbody>
-    </table>
+      <table class="table b-table table-striped" style="border: 15px solid #dbdbdb;">
+        <tbody class="rowclass">
+          <!-- eslint-disable vue/no-use-v-if-with-v-for,vue/no-confusing-v-for-v-if -->
+          <tr v-for="(value, text) in data" v-if="value !== undefined && value !== null" :key="text">
+            <td v-if="text === 'html' || text === 'thumbnail_url'">{{ text }}<br><div>{{ isSize(text) }}</div></td>
+            <td v-else>{{ text }}</td>
+            <td v-if="text === 'title'" style="font-weight: bold;">{{ value }}</td>
+            <td v-else-if="text === 'html'">{{value}}<div v-html="value"></div></td>
+            <td v-else-if="text === 'thumbnail_url'">
+              <a :href="value">{{ value }}</a>
+              <br><img :src="value" />
+            </td>
+            <td v-else-if="isUrl(text)">
+              <a :href="value">{{ value }}</a>
+            </td>
+            <td v-else>{{ value }}</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </section>
 </template>
@@ -40,8 +40,7 @@ export default {
       form: {
         url: ''
       },
-      data: {
-      }
+      data: {}
     }
   },
   methods: {
@@ -72,7 +71,7 @@ export default {
             this.$set(this.data, 'uri', res.data.uri)
             this.$set(this.data, 'cache_age', res.data.cache_age)
           }).catch((e) => {
-            this.$error(e)
+            alert(e.response.data.message)
           }).finally(() => {
 
           })
@@ -85,8 +84,15 @@ export default {
       return text.includes("url");
     },
     isSize(text) {
-      const htmlSize = '(' + this.data.width + '/' + this.data.height + ')'
-      const thumbnailSize = '(' + this.data.thumbnail_width + '/' + this.data.thumbnail_height + ')'
+      const width = this.data.width
+      const heigth = this.data.height
+      const thumbnailWidth = this.data.thumbnail_width
+      const thumbnailHeight = this.data.thumbnail_height
+
+      const widthSize = '(' + width + ')'
+
+      const htmlSize = this.heigth !== undefined ? '(' + width + '/' + heigth + ')' : widthSize
+      const thumbnailSize = '(' + thumbnailWidth + '/' + thumbnailHeight + ')'
       return text === 'html' ? htmlSize : thumbnailSize
     }
   }
@@ -111,6 +117,20 @@ h2{
    margin-bottom: 20px; 
    width:60%;
    border:none;
+   padding: 15px 15px;
+
+}
+.div-input > button{
+    cursor: pointer;
+    position: absolute;
+    top: 136px;
+    right: 436px;
+    border: none;
+    background: #eeee14bd;
+    font-weight: bold;
+    width: 60px;
+    height: 35px;
+    font-size: 13px;
 }
 td{
   border-bottom:none;
