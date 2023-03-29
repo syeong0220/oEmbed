@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.validator.routines.UrlValidator;
-import org.apache.http.client.ClientProtocolException;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -38,7 +37,7 @@ public class OembedServiceImpl implements OembedService {
             List<String> list = this.getEndPointsList(data);
             // 4. oEmbed URL 만들기
             String createUrl = this.createUrl(url, list);
-            // 5. 생성된 URL httpClient
+            // 5. 생성된 URL로 데이터 가져오기
             JSONObject result = this.returnUrl(createUrl);
             return result;
         } else {
@@ -139,7 +138,7 @@ public class OembedServiceImpl implements OembedService {
         return oEmbedUrl;
     }
 
-    public JSONObject returnUrl(String createUrl) throws ClientProtocolException, IOException, ParseException {
+    public JSONObject returnUrl(String createUrl) throws IOException, ParseException {
         JSONObject resultObj = null;
         try {
             URL url = new URL(createUrl);
