@@ -47,7 +47,8 @@ public class OembedServiceImpl implements OembedService {
             return result;
         } else {
             log.error("oEmbed 생성에 실패하였습니다. : {}", url);
-            return null;
+            throw new LogicException(MessageException.FAILED_CREATE_JSON_DATA);
+            // return null;
         }
     }
 
@@ -122,8 +123,6 @@ public class OembedServiceImpl implements OembedService {
 
         // 1. host 정보 가져오기
         String host = this.getHost(originUrl);
-
-        log.info("host : {}", host);
 
         // 2. list에서 host이름을 포함한 oEmbed url 찾기
         for (String urlName : list) {
